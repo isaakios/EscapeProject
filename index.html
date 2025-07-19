@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCT6A03 - Interactive Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
+        }
+        .screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #login-screen {
+            background-image: url('ImageWindows.jpeg');
+            background-size: cover;
+            background-position: center;
+        }
+        #typewriter-text {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 18px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            text-align: left;
+            color: #000;
+            background: white;
+            padding: 20px;
+            max-width: 700px;
+            border-radius: 8px;
+        }
+        #video-container, #loop-video-container {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        /* Updated canvas styling for full-screen soundwave */
+        #soundwave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .login-box {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 2rem;
+            border-radius: 0.5rem;
+        }
+        .input-field {
+            background-color: #333;
+            border: 1px solid #555;
+            color: #fff;
+        }
+        .login-button {
+            background-color: #0078d4;
+            transition: background-color 0.3s;
+        }
+        .login-button:hover {
+            background-color: #005a9e;
+        }
+        .error-message {
+            color: #ff4d4d;
+            height: 1.5rem;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+        <div class="login-box w-full max-w-sm text-center">
+            <h1 class="text-2xl font-bold mb-6">ACCESS REQUIRED</h1>
+            <div class="mb-4">
+                <label for="username" class="block text-left mb-1">User Name:</label>
+                <input type="text" id="username" class="w-full p-2 rounded input-field" placeholder="Enter User Name">
+            </div>
+            <div class="mb-6">
+                <label for="password" class="block text-left mb-1">Password:</label>
+                <input type="text" id="password" class="w-full p-2 rounded input-field" placeholder="••••">
+            </div>
+            <p id="error-message" class="error-message mb-4"></p>
+            <button id="login-button" class="w-full p-3 rounded font-bold login-button">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- Audio Recording Screen -->
+    <div id="audio-screen" class="screen hidden bg-gray-900">
+        <canvas id="soundwave"></canvas>
+        <audio id="principal-audio" src="Why.mp3" crossOrigin="anonymous"></audio>
+    </div>
+
+    <!-- First Video Screen -->
+    <div id="video-screen" class="screen hidden">
+        <div id="video-container">
+            <video id="first-video" src="JTW.mp4"></video>
+        </div>
+    </div>
+
+    <!-- Typewriter Screen -->
+    <div id="typewriter-screen" class="screen hidden bg-black bg-opacity-75">
+        <div id="typewriter-text"></div>
+    </div>
+
+    <!-- Looping Video Screen -->
+    <div id="loop-video-screen" class="screen hidden">
+        <div id="loop-video-container">
+            <video id="loop-video" src="JTW.mp4" loop></video>
+        </div>
+        <div id="play-pause-overlay" class="absolute top-0 left-0 w-full h-full flex justify-center items-center opacity-0 transition-opacity duration-300">
+             <svg class="w-24 h-24 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const loginScreen = document.getElementById('login-screen');
+        const audioScreen = document.getElementById('audio-screen');
+        const videoScreen = document.getElementById('video-screen');
+        const typewriterScreen = document.getElementById('typewriter-screen');
+        const loopVideoScreen = document.getElementById('loop-video-screen');
+
+        const loginButton = document.getElementById('login-button');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('error-message');
+
+        const principalAudio = document.getElementById('principal-audio');
+        const soundwaveCanvas = document.getElementById('soundwave');
+        const firstVideo = document.getElementById('first-video');
+        const typewriterTextElement = document.getElementById('typewriter-text');
+        const loopVideo = document.getElementById('loop-video');
+        const playPauseOverlay = document.getElementById('play-pause-overlay');
+
+        // --- State and Config ---
+        let audioContext;
+        let analyser;
+        const correctUsername = "CCT6A03";
+        const correctPassword = "6823";
+        const typewriterContent = `多謝你哋願意花時間嚟搵我！行到呢一步，我相信你哋應該都知道，我一直好想成為一位作家。
+可惜我哋學校無得讀 English Literature，我都曾經諗過 — 如果有得揀，我會唔會就留喺香港，繼續同你哋一齊上堂、考試、寫作？
+其實喺中六頭，我已經偷偷報咗大學，但我唔想離棄你哋呢班一齊讀書、一齊努力咗六年嘅戰友。
+當我收到 offer 嘅時候，其實已經差唔多要出發，連畢業禮都趕唔切參加。對唔住，我走得好突然。
+不過今日見到你哋嚟搵我，證明你哋冇忘記我，更重要係 —— 你哋已經喺畢業之後，搵到自己嘅理想同目標。
+我真心為你哋高興，我自己都終於踏上咗夢想之路。
+嚟到最後，我有一個問題想問返你哋 —— 不如你哋估下，我依家喺邊度？`;
+
+        // --- Screen Transition Logic ---
+        function switchScreen(from, to) {
+            if (from) {
+                from.classList.add('fade-out');
+                setTimeout(() => {
+                    from.classList.add('hidden');
+                    from.classList.remove('fade-out');
+                }, 1000);
+            }
+            if (to) {
+                setTimeout(() => {
+                    to.classList.remove('hidden');
+                }, from ? 1000 : 0);
+            }
+        }
+
+        // --- 1. Login Logic ---
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleLogin();
+            }
+        });
+
+        function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (username === correctUsername && password === correctPassword) {
+                errorMessage.textContent = '';
+                // User interaction unlocks audio/video autoplay
+                initAudio();
+                switchScreen(loginScreen, audioScreen);
+                principalAudio.play().catch(e => console.error("Error playing audio:", e));
+            } else {
+                errorMessage.textContent = 'Invalid credentials. Please try again.';
+            }
+        }
+
+        // --- 2. Audio and Soundwave Logic ---
+        function initAudio() {
+            // Ensure audio context is created after a user gesture (like the login click)
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    const source = audioContext.createMediaElementSource(principalAudio);
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    analyser.fftSize = 256;
+                    drawSoundwave();
+                } catch (e) {
+                    console.error("Error initializing AudioContext:", e);
+                }
+            }
+        }
+
+        function drawSoundwave() {
+            // Set canvas dimensions to match the window size
+            soundwaveCanvas.width = window.innerWidth;
+            soundwaveCanvas.height = window.innerHeight;
+
+            const canvasCtx = soundwaveCanvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            const WIDTH = soundwaveCanvas.width;
+            const HEIGHT = soundwaveCanvas.height;
+            const centerY = HEIGHT / 2;
+
+            function draw() {
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                canvasCtx.fillStyle = 'rgb(15, 23, 42)'; // A dark slate color
+                canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+                
+                canvasCtx.lineWidth = 3;
+                canvasCtx.strokeStyle = '#3b82f6'; 
+
+                const barWidth = (WIDTH / bufferLength);
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    // Scale bar height to be more responsive to the screen height
+                    const barHeight = (dataArray[i] / 255) * (HEIGHT / 1.5);
+                    
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(x, centerY - barHeight / 2);
+                    canvasCtx.lineTo(x, centerY + barHeight / 2);
+                    canvasCtx.stroke();
+
+                    x += barWidth + 2;
+                }
+            }
+            draw();
+        }
+        
+        // Redraw canvas on window resize
+        window.addEventListener('resize', () => {
+             if (!audioScreen.classList.contains('hidden')) {
+                drawSoundwave();
+             }
+        });
+
+        principalAudio.addEventListener('ended', () => {
+            switchScreen(audioScreen, videoScreen);
+            firstVideo.play().catch(e => console.error("Error playing first video:", e));
+        });
+
+        // --- 3. First Video Logic ---
+        firstVideo.addEventListener('ended', () => {
+            switchScreen(videoScreen, typewriterScreen);
+            startTypewriter();
+        });
+        
+        // Add error listeners to media elements
+        principalAudio.addEventListener('error', (e) => console.error('Audio Error:', e));
+        firstVideo.addEventListener('error', (e) => console.error('First Video Error:', e));
+        loopVideo.addEventListener('error', (e) => console.error('Loop Video Error:', e));
+
+
+        // --- 4. Typewriter Logic ---
+        function startTypewriter() {
+            let i = 0;
+            typewriterTextElement.innerHTML = '';
+            function type() {
+                if (i < typewriterContent.length) {
+                    typewriterTextElement.innerHTML += typewriterContent.charAt(i);
+                    i++;
+                    setTimeout(type, 80);
+                } else {
+                    // Finished typing
+                    setTimeout(() => {
+                        switchScreen(typewriterScreen, loopVideoScreen);
+                        loopVideo.play().catch(e => console.error("Error playing loop video:", e));
+                    }, 2000); // Wait 2 seconds before switching
+                }
+            }
+            type();
+        }
+
+        // --- 5. Looping Video Logic ---
+        function toggleLoopVideo() {
+            if (loopVideo.paused) {
+                loopVideo.play().catch(e => console.error("Error playing loop video:", e));
+                playPauseOverlay.style.opacity = '0';
+            } else {
+                loopVideo.pause();
+                playPauseOverlay.style.opacity = '1';
+
+            }
+        }
+        
+        loopVideoScreen.addEventListener('click', toggleLoopVideo);
+        window.addEventListener('keydown', (event) => {
+            if (loopVideoScreen.classList.contains('hidden')) return;
+            if (event.code === 'Space') {
+                event.preventDefault(); // Prevent page scroll
+                toggleLoopVideo();
+            }
+        });
+
+    </script>
+</body>
+</html>
+
