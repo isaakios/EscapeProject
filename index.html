@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCT6A03 - Interactive Experience</title>
+    <title>LCT6A03 - Interactive Experience</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -38,6 +38,9 @@
             background-size: cover;
             background-position: center;
         }
+        #typewriter-screen {
+            background-color: white;
+        }
         #typewriter-text {
             font-family: 'Courier New', Courier, monospace;
             font-size: 18px;
@@ -48,7 +51,6 @@
             background: white;
             padding: 20px;
             max-width: 700px;
-            border-radius: 8px;
         }
         #video-container, #loop-video-container {
             width: 100%;
@@ -60,7 +62,6 @@
             height: 100%;
             object-fit: contain;
         }
-        /* Updated canvas styling for full-screen soundwave */
         #soundwave {
             position: absolute;
             top: 0;
@@ -114,18 +115,18 @@
     <!-- Audio Recording Screen -->
     <div id="audio-screen" class="screen hidden bg-gray-900">
         <canvas id="soundwave"></canvas>
-        <audio id="principal-audio" src="Why.mp3" crossOrigin="anonymous"></audio>
+        <audio id="principal-audio" src="principalrecording.mp3" crossOrigin="anonymous"></audio>
     </div>
 
     <!-- First Video Screen -->
     <div id="video-screen" class="screen hidden">
         <div id="video-container">
-            <video id="first-video" src="videoplayback.mp4"></video>
+            <video id="first-video" src="solo.mp4"></video>
         </div>
     </div>
 
     <!-- Typewriter Screen -->
-    <div id="typewriter-screen" class="screen hidden bg-black bg-opacity-75">
+    <div id="typewriter-screen" class="screen hidden">
         <div id="typewriter-text"></div>
     </div>
 
@@ -162,7 +163,7 @@
         // --- State and Config ---
         let audioContext;
         let analyser;
-        const correctUsername = "CCT6A03";
+        const correctUsername = "LCT6A03";
         const correctPassword = "6823";
         const typewriterContent = `多謝你哋願意花時間嚟搵我！行到呢一步，我相信你哋應該都知道，我一直好想成為一位作家。
 可惜我哋學校無得讀 English Literature，我都曾經諗過 — 如果有得揀，我會唔會就留喺香港，繼續同你哋一齊上堂、考試、寫作？
@@ -338,4 +339,3 @@
     </script>
 </body>
 </html>
-
