@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCT6A16 - Interactive Experience</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 1s ease-in-out;
+            opacity: 1;
+        }
+        .screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #login-screen {
+            background-image: url('ImageWindows.jpeg');
+            background-size: cover;
+            background-position: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #image-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .login-box {
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 2rem;
+            border-radius: 0.5rem;
+        }
+        .input-field {
+            background-color: #333;
+            border: 1px solid #555;
+            color: #fff;
+        }
+        .login-button {
+            background-color: #0078d4;
+            transition: background-color 0.3s;
+        }
+        .login-button:hover {
+            background-color: #005a9e;
+        }
+        .error-message {
+            color: #ff4d4d;
+            height: 1.5rem;
+            text-shadow: 1px 1px 2px black;
+        }
+        #start-prompt {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Login Screen -->
+    <div id="login-screen" class="screen">
+        <div class="login-box w-full max-w-sm text-center">
+            <h1 class="text-2xl font-bold mb-6">ACCESS REQUIRED</h1>
+            <div class="mb-4">
+                <label for="username" class="block text-left mb-1">User Name:</label>
+                <input type="text" id="username" class="w-full p-2 rounded input-field" placeholder="Enter User Name">
+            </div>
+            <div class="mb-6">
+                <label for="password" class="block text-left mb-1">Password:</label>
+                <input type="text" id="password" class="w-full p-2 rounded input-field" placeholder="••••">
+            </div>
+            <p id="error-message" class="error-message mb-4"></p>
+            <button id="login-button" class="w-full p-3 rounded font-bold login-button">LOGIN</button>
+        </div>
+    </div>
+
+    <!-- 2. First Video Screen (Plays once) -->
+    <div id="first-video-screen" class="screen hidden bg-black">
+        <video id="first-video" src="EscapingVideo.mp4"></video>
+    </div>
+
+    <!-- 3. Image Screen (Displays for a set time) -->
+    <div id="image-screen" class="screen hidden bg-black">
+        <img src="PuzzleImage.jpeg" alt="Display Image">
+    </div>
+
+    <!-- 4. Final Video Screen (Play on prompt, loops, no stopping) -->
+    <div id="final-video-screen" class="screen hidden bg-black">
+        <video id="final-video" src="InterviewVideo.mp4" loop class="absolute top-0 left-0"></video>
+        <p id="start-prompt">Press SPACE to begin</p>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const loginScreen = document.getElementById('login-screen');
+        const firstVideoScreen = document.getElementById('first-video-screen');
+        const imageScreen = document.getElementById('image-screen');
+        const finalVideoScreen = document.getElementById('final-video-screen');
+
+        const loginButton = document.getElementById('login-button');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const errorMessage = document.getElementById('error-message');
+
+        const firstVideo = document.getElementById('first-video');
+        const finalVideo = document.getElementById('final-video');
+        const startPrompt = document.getElementById('start-prompt');
+
+        // --- State and Config ---
+        const correctUsername = "LCT6A16";
+        const correctPassword = "6823";
+
+        // --- Screen Transition Logic ---
+        function switchScreen(from, to) {
+            if (from) {
+                from.classList.add('fade-out');
+                setTimeout(() => {
+                    from.classList.add('hidden');
+                    from.classList.remove('fade-out');
+                }, 1000);
+            }
+            if (to) {
+                setTimeout(() => {
+                    to.classList.remove('hidden');
+                }, from ? 1000 : 0);
+            }
+        }
+
+        // --- 1. Login Logic ---
+        loginButton.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleLogin();
+            }
+        });
+
+        function handleLogin() {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (username === correctUsername && password === correctPassword) {
+                errorMessage.textContent = '';
+                switchScreen(loginScreen, firstVideoScreen);
+                firstVideo.play().catch(e => console.error("Error playing first video:", e));
+            } else {
+                errorMessage.textContent = 'Invalid credentials. Please try again.';
+            }
+        }
+
+        // --- 2. First Video Logic ---
+        firstVideo.addEventListener('ended', () => {
+            switchScreen(firstVideoScreen, imageScreen);
+            
+            // Wait on the image screen for a set duration before proceeding
+            // NOTE: 10000ms = 10 seconds. For 10 minutes, use 600000.
+            setTimeout(() => {
+                switchScreen(imageScreen, finalVideoScreen);
+            }, 10000); 
+        });
+
+        // --- 3. Final Video Logic ---
+        window.addEventListener('keydown', (event) => {
+            // Check if the final screen is active and the key is Space
+            if (!finalVideoScreen.classList.contains('hidden') && event.code === 'Space') {
+                event.preventDefault(); // Prevent space bar from scrolling the page
+                
+                // Toggle play/pause for the final video
+                if (finalVideo.paused) {
+                    // Hide the prompt if it's the first time playing
+                    if (startPrompt.style.display !== 'none') {
+                        startPrompt.style.display = 'none';
+                    }
+                    finalVideo.play().catch(e => console.error("Error playing final video:", e));
+                } else {
+                    finalVideo.pause();
+                }
+            }
+        });
+        
+        // --- General Error Handling for Media ---
+        firstVideo.addEventListener('error', (e) => console.error('First Video Error:', e));
+        finalVideo.addEventListener('error', (e) => console.error('Final Video Error:', e));
+
+    </script>
+</body>
+</html>
